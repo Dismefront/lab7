@@ -1,0 +1,36 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation "org.slf4j:slf4j-simple:1.7.9"
+    implementation project(":common")
+}
+
+test {
+    useJUnitPlatform()
+}
+
+mainClassName = 'server.Main'
+
+jar {
+    manifest {
+        attributes "Main-Class": "$mainClassName"
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+compileJava.options.encoding = 'UTF-8'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
