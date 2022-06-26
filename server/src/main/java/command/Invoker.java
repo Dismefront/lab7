@@ -47,6 +47,7 @@ public class Invoker {
                 try {
                     Command c = (Command)clazz.getConstructor().newInstance();
                     c.setCommand(inp);
+                    c.setUsername(req.getUsername());
                     c.execute();
                     return c;
                 }

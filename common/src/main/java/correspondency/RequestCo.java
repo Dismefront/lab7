@@ -3,7 +3,7 @@ package correspondency;
 import storage.Worker;
 
 import java.io.Serializable;
-import java.sql.SQLOutput;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -16,6 +16,9 @@ public class RequestCo implements Serializable {
     private Long id;
     private ArrayList<Worker> objArray = null;
     private String workingFile = null;
+    private String username;
+    private byte[] hashedPassword;
+    private boolean regNeed = false;
 
     public String getWorkingFile() {
         return workingFile;
@@ -57,6 +60,31 @@ public class RequestCo implements Serializable {
         return this.type;
     }
 
+    public void setUserData(String username, String password, boolean regNeed) {
+        this.username = username;
+        this.regNeed = regNeed;
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            hashedPassword = md.digest(password.getBytes());
+        }
+        catch (Exception ex) {
+            System.out.println("No algorithm");
+            System.exit(2);
+        }
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public byte[] getHashedPassword() {
+        return hashedPassword;
+    }
+
+    public boolean isRegNeeded() {
+        return regNeed;
+    }
+
     public RequestCo getRequestLine(Scanner scanner) {
         this.requestLine = getValidatedLine(scanner);
         return this;
@@ -70,9 +98,9 @@ public class RequestCo implements Serializable {
         return obj;
     }
 
-    public RequestCo getRequestObject(Scanner scanner) {
+    public RequestCo getRequestObject(Scanner scanner, String user) {
         try {
-            this.obj = InputParser.getWorkerFromInput(scanner);
+            this.obj = InputParser.getWorkerFromInput(scanner, user);
             return this;
         }
         catch (NoSuchElementException ex) {

@@ -7,14 +7,18 @@ import correspondency.ResponseCo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.ObjectSerializer;
+import storage.User;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,8 +26,9 @@ public class SocketServer {
 
     private Selector selector;
     private InetSocketAddress address;
-    private SocketChannel session;
-    private String workingFile = null;
+    // private SocketChannel session;
+    private Map<SocketAddress, SocketChannel> clients = new HashMap<>();
+    private User curUser;
 
     private ExecutorService ctpService = Executors.newCachedThreadPool();
 
@@ -58,13 +63,14 @@ public class SocketServer {
                     }
                 }
                 else if (key.isReadable()) {
+                    SocketChannel channel = (SocketChannel) key.channel();
                     try {
-                        this.read(key);
+                        logger.info("Key readable, channel address: " + channel.getRemoteAddress());
+                        this.read(clients.get(channel.getRemoteAddress()));
                     }
                     catch (IOException ex) {
                         logger.info("Client disconnected");
-                        this.session.close();
-                        break;
+                        channel.close();
                     }
                 }
             }
@@ -77,24 +83,24 @@ public class SocketServer {
         SocketChannel channel = ssc.accept();
         channel.configureBlocking(false);
         channel.register(this.selector, SelectionKey.OP_READ);
-        if (this.session != null)
-            this.session.close();
-        this.session = channel;
-        logger.info("accepted " + this.session);
+
+        clients.put(channel.getRemoteAddress(), channel);
+
+        logger.info("accepted " + channel.getRemoteAddress());
     }
 
     class ProcessRequest implements Runnable {
 
         private RequestCo req;
-        private SelectionKey key;
+        private SocketChannel channel;
 
         public ProcessRequest setRequest(RequestCo req) {
             this.req = req;
             return this;
         }
 
-        public ProcessRequest setKey(SelectionKey key) {
-            this.key = key;
+        public ProcessRequest setChannel(SocketChannel channel) {
+            this.channel = channel;
             return this;
         }
 
@@ -104,10 +110,6 @@ public class SocketServer {
                 return;
 
             ResponseCo res = null;
-            if (req.hasWorkingFile()) {
-                workingFile = req.getWorkingFile();
-                CommandSave.setPath(workingFile);
-            }
             if (req.hasArray()) {
                 req.getObjArray().forEach(CommandAdd::addWorker);
                 res = new ResponseCo("Successfully added "
@@ -124,7 +126,7 @@ public class SocketServer {
                     );
                 } else if (req.getCommandType().equals(CommandType.UPDATEID)) {
                     res = new ResponseCo(
-                            CommandUpdateId.updateId(req.getObj(), req.getId())
+                            CommandUpdateId.updateId(req.getObj(), req.getId(), req.getUsername())
                     );
                 }
 
@@ -136,37 +138,56 @@ public class SocketServer {
                     res = new ResponseCo("Wrong command");
                 }
             }
-            sendResponse(key, res);
+            sendResponse(channel, res);
 
             logger.info("Got: " + req.getLine());
         }
 
     }
 
-    private void read(SelectionKey key) throws IOException {
+    private void read(SocketChannel channel) throws IOException {
 
         ctpService.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    SocketChannel channel = (SocketChannel) key.channel();
                     ByteBuffer buffer = ByteBuffer.allocate(2048);
                     int read = channel.read(buffer);
                     if (read == -1) {
                         channel.close();
                         return;
                     }
+                    logger.info("Read from channel: " + read);
+
                     byte[] data = new byte[read];
                     System.arraycopy(buffer.array(), 0, data, 0, read);
                     RequestCo req = ObjectSerializer.fromByteArray(data);
 
-                    new Thread(new ProcessRequest().setRequest(req).setKey(key)).start();
+                    if (req == null) return;
 
+                    if (req.isRegNeeded()) {
+                        logger.info("Reg user");
+                        DatabaseManager.regUser(new User(req.getUsername(), req.getHashedPassword()));
+                    }
+
+                    boolean userValid = DatabaseManager.isUserValid(req.getUsername(), req.getHashedPassword());
+                    logger.info("Is user valid: " + userValid);
+
+                    if (userValid) {
+                        logger.info("Start process request from user " + req.getUsername());
+                        new Thread(new ProcessRequest().setRequest(req).setChannel(channel)).start();
+                    }
+                    else {
+                        sendResponse(channel, new ResponseCo("Incorrect user or password"));
+                    }
                 }
                 catch (IOException ex) {
                     logger.info("Client disconnected");
                     try {
-                        session.close();
+                        if (channel.isConnected()) {
+                            clients.remove(channel.getRemoteAddress());
+                            channel.close();
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -175,14 +196,13 @@ public class SocketServer {
         });
     }
 
-    private void sendResponse(SelectionKey key,
+    private void sendResponse(SocketChannel channel,
                               ResponseCo response) {
         ctpService.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    SocketChannel channel = (SocketChannel) key.channel();
-                    channel.configureBlocking(false);
+                    logger.info("Send response: " + response);
 
                     byte[] arr = ObjectSerializer.toByteArray(response);
                     channel.write(ByteBuffer.wrap(arr));
@@ -190,7 +210,8 @@ public class SocketServer {
                 catch (IOException ex) {
                     logger.info("Client disconnected");
                     try {
-                        session.close();
+                        clients.remove(channel.getRemoteAddress());
+                        channel.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

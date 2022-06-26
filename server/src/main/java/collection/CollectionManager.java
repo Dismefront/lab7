@@ -16,7 +16,7 @@ public interface CollectionManager<T> {
 
     String updateId(T element);
 
-    String removeById(long id);
+    String removeById(Long id, String username);
 
     void clear();
 

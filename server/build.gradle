@@ -12,6 +12,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation "org.slf4j:slf4j-simple:1.7.9"
     implementation project(":common")
+    runtimeOnly "org.postgresql:postgresql:42.2.1"
 }
 
 test {

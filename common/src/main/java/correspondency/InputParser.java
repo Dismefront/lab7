@@ -14,7 +14,7 @@ public class InputParser {
         return name == null || name.isEmpty();
     }
 
-    public static Worker getWorkerFromInput(Scanner source) throws NoSuchElementException {
+    public static Worker getWorkerFromInput(Scanner source, String user) throws NoSuchElementException {
         String name;
         Coordinates coords;
         Long salary;
@@ -207,7 +207,7 @@ public class InputParser {
         }
         person = new Person(pweight, eyeC, hairC, pcountry);
         Worker w = new Worker(name, coords,
-                salary, date, pos, st, person);
+                salary, date, pos, st, person, user);
         return w;
     }
 

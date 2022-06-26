@@ -3,6 +3,7 @@ package command;
 import collection.CollectionData;
 import correspondency.CommandType;
 import correspondency.ResponseCo;
+import server.DatabaseManager;
 import storage.Worker;
 
 @PointCommand(name = "add", description = "добавить новый элемент в коллекцию")
@@ -19,6 +20,7 @@ public class CommandAdd extends Command {
     }
 
     public static void addWorker(Worker w) {
+        DatabaseManager.addWorker(w);
         CollectionData.collection.add(w);
     }
 

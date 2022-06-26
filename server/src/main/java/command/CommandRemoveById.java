@@ -2,6 +2,7 @@ package command;
 
 import collection.CollectionData;
 import correspondency.ResponseCo;
+import server.DatabaseManager;
 
 @PointCommand(name="remove_by_id", description = "удалить элемент из коллекции по его id")
 public class CommandRemoveById extends Command {
@@ -17,7 +18,7 @@ public class CommandRemoveById extends Command {
             setResponse(new ResponseCo("Wrong command argument"));
             return;
         }
-        setResponse(new ResponseCo(CollectionData.collection.removeById(r)));
+        setResponse(new ResponseCo(CollectionData.collection.removeById(r, getUsername())));
     }
 
 }

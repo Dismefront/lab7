@@ -3,6 +3,7 @@ package command;
 import collection.CollectionData;
 import correspondency.CommandType;
 import correspondency.ResponseCo;
+import server.DatabaseManager;
 import storage.Worker;
 
 @PointCommand(name="update", description = "обновить значение элемента " +
@@ -28,9 +29,13 @@ public class CommandUpdateId extends Command {
         setResponse(response);
     }
 
-    public static String updateId(Worker w, Long id) {
-        w.setId(id);
-        return CollectionData.collection.updateId(w);
+    public static String updateId(Worker w, Long id, String requester) {
+        if (DatabaseManager.checkValidity(id, requester)) {
+            w.setId(id);
+            return CollectionData.collection.updateId(w);
+        }
+        else
+            return "You're not the owner of this slot";
     }
 
 }

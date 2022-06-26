@@ -4,6 +4,7 @@ import collection.CollectionData;
 import correspondency.CommandType;
 import correspondency.InputParser;
 import correspondency.ResponseCo;
+import server.DatabaseManager;
 import storage.Worker;
 
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class CommandAddIfMin extends Command {
         String response;
         if (tmp.size() == 0 || tmp.get(0).getSalary() > w.getSalary()) {
             CollectionData.collection.add(w);
+            DatabaseManager.addWorker(w);
             response = "Added into the collection";
             return response;
         }

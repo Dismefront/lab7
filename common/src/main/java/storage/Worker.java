@@ -16,9 +16,10 @@ public class Worker implements Collectionable, Serializable {
     private Position position; //Поле может быть null
     private Status status; //Поле может быть null
     private Person person; //Поле не может быть null
+    private String owner;
 
     public Worker(String name, Coordinates coordinates,
-                  Long salary, LocalDate startDate, Position position, Status status, Person person) {
+                  Long salary, LocalDate startDate, Position position, Status status, Person person, String owner) {
         this.name = name;
         this.coordinates = coordinates;
         this.salary = salary;
@@ -26,8 +27,13 @@ public class Worker implements Collectionable, Serializable {
         this.position = position;
         this.status = status;
         this.person = person;
+        this.owner = owner;
 
         this.creationDate = LocalDate.now();
+    }
+
+    public String getOwner() {
+        return owner;
     }
 
     public void setCreationDate(LocalDate creationDate) {
@@ -119,7 +125,7 @@ public class Worker implements Collectionable, Serializable {
         return "(" + this.id + ", name:" + this.getName() +
                 ", coords:" + this.coordinates + ", creDate:" + this.creationDate + ", salary:" +
                 this.salary + ", startDate:" + this.startDate + ", Pos:" + pos + ", status:" +
-                st + ", person" + this.person + ")";
+                st + ", person" + this.person + ", user:" + this.owner + ")";
     }
 
 }

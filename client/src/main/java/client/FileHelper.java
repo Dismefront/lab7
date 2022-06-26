@@ -14,7 +14,7 @@ public class FileHelper {
      * Adds elements to the collection from csv file
      * @param filename the name of read csv file
      */
-    public static ArrayList<Worker> addFromCsvFile(String filename) {
+    /*public static ArrayList<Worker> addFromCsvFile(String filename) {
         ArrayList<Worker> res = new ArrayList<>();
         try {
             System.out.println("Reading " + filename);
@@ -119,6 +119,6 @@ public class FileHelper {
             return null;
         }
         return res;
-    }
+    }*/
 
 }

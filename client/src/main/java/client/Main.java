@@ -13,17 +13,19 @@ import java.util.ArrayList;
 public class Main {
 
     public static void main(String ... args) {
-        ArrayList<Worker> workers = null;
-        String workingFile = "default.txt";
-        if (args.length != 0) {
-            String filename = args[0];
-            workers = FileHelper.addFromCsvFile(filename);
-            workingFile = args[0];
-        }
+
         Client client = new Client("localhost", 8080);
-        if (!(workers == null || workers.isEmpty()))
-            client.setObjectsFromFile(workers);
-        client.setWorkingFile(workingFile);
+
+        try {
+            client.setUserProps(args[0], args[1]);
+            if (args.length >= 3 && args[2].equals("reg"))
+                client.registrationNeeded();
+        }
+        catch (Exception ex) {
+            System.out.println("No login and password given");
+            System.exit(2);
+        }
+
         while (true) {
             try {
                 client.start();

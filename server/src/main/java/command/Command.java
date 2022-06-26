@@ -12,6 +12,15 @@ public abstract class Command {
     protected ArrayList<String> args;
     private String command;
     private ResponseCo response;
+    private String username;
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getUsername() {
+        return this.username;
+    }
 
     public void setResponse(ResponseCo response) {
         this.response = response;

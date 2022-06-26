@@ -1,5 +1,6 @@
 package collection;
 
+import server.DatabaseManager;
 import storage.Worker;
 
 import java.time.LocalDate;
@@ -76,11 +77,13 @@ public class WorkerCollection implements CollectionManager<Worker>, Iterable<Wor
     }
 
     @Override
-    public String removeById(long id) {
+    public String removeById(Long id, String username) {
         boolean ok = false;
         String ret = "";
         for (int i = 0; i < this.collection.size(); i++) {
-            if (this.collection.get(i).getId().equals(id)) {
+            if (this.collection.get(i).getId().equals(id)
+                    && this.collection.get(i).getOwner().equals(username)) {
+                DatabaseManager.delWorker(this.collection.get(i).getId(), username);
                 this.collection.remove(i);
                 ret = "Element with id " + id + " has been removed";
                 ok = true;

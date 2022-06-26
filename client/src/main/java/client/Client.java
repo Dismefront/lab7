@@ -25,21 +25,16 @@ public class Client {
         this.address = new InetSocketAddress(host, port);
     }
 
-    private ArrayList<Worker> objects_to_add;
-    private String workingFile;
+    private String username, password;
+    private boolean registrationNeeded = false;
 
-    public void setWorkingFile(String name) {
-        workingFile = name;
+    public void setUserProps(String username, String password) {
+        this.username = username;
+        this.password = password;
     }
 
-    public void setObjectsFromFile(ArrayList<Worker> list) {
-        Collections.sort(list, new Comparator<Worker>() {
-            @Override
-            public int compare(Worker o1, Worker o2) {
-                return (int) (o1.getId() - o2.getId());
-            }
-        });
-        objects_to_add = list;
+    public void registrationNeeded() {
+        registrationNeeded = true;
     }
 
     public void start() throws IOException {
@@ -74,10 +69,6 @@ public class Client {
                     }
                 }
                 if (key.isWritable()) {
-                    if (objects_to_add != null) {
-                        sendObjectsRequest(key);
-                        continue;
-                    }
                     try {
                         sendRequest(key);
                     }
@@ -132,21 +123,6 @@ public class Client {
 
     }
 
-    private void sendObjectsRequest(SelectionKey key) throws IOException {
-        SocketChannel channel = (SocketChannel) key.channel();
-        channel.configureBlocking(false);
-
-
-        RequestCo r = new RequestCo();
-        r.setObjArray(this.objects_to_add);
-        r.setWorkingFile(this.workingFile);
-
-        byte[] arr = ObjectSerializer.toByteArray(r);
-        channel.write(ByteBuffer.wrap(arr));
-        sleep();
-        this.objects_to_add = null;
-    }
-
     private void sendObjectRequest(SelectionKey key, ResponseCo res) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
         channel.configureBlocking(false);
@@ -158,14 +134,16 @@ public class Client {
             clear_exec();
         }
 
-        RequestCo r = new RequestCo().getRequestObject(curScanner);
+        RequestCo r = new RequestCo().getRequestObject(curScanner, username);
         if (r == null) {
             return;
         }
         r.setCommandType(res.getCommandType());
         r.setId(res.getId());
+        r.setUserData(username, password, registrationNeeded);
         byte[] arr = ObjectSerializer.toByteArray(r);
         channel.write(ByteBuffer.wrap(arr));
+        registrationNeeded = false;
         sleep();
     }
 
@@ -220,8 +198,10 @@ public class Client {
         }
 
         RequestCo r = new RequestCo().getRequestLine(curScanner);
+        r.setUserData(username, password, registrationNeeded);
         byte[] arr = ObjectSerializer.toByteArray(r);
         channel.write(ByteBuffer.wrap(arr));
+        registrationNeeded = false;
     }
 
     private boolean connect(SelectionKey key) {
